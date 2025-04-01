@@ -1,10 +1,11 @@
+# File: .github/workflows/supabase-report.yml
 name: Generate and Deploy Supabase Report
 
-on: 
+on:
   schedule:
-    - cron: '0 8 * * 1' # i.e every Monday @ 8AM UTC
-  workflow_dispatch: # Allow manual trigger
-  
+    - cron: '0 8 * * 1'  # Run every Monday at 8:00 AM UTC
+  workflow_dispatch:     # Allow manual triggering
+
 jobs:
   render:
     runs-on: ubuntu-latest
@@ -15,24 +16,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        
-      - name: Set Up R
+
+      - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.4.2'
-          
+          r-version: '4.2.0'
+
       - name: Install dependencies
         run: |
-          R -e 'install.packages(c('rmarkdown', 'knitr', 
-          'httr', 'jsonlite', 'dplyr', 'ggplot2', 'lubridate',
-          'tinytex'))'
+          R -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex"))'
           R -e 'tinytex::install_tinytex()'
-          
+
+      - name: Check Supabase credentials
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "Supabase credentials are not properly set in GitHub secrets."
+            exit 1
+          fi
+
       - name: Render RMarkdown
-        run : |
-        Rscript -e 'rmarkdown::render("auto-report.Rmd", output_file = "report.pdf")'
-        
-      - name: Check Query Status
+        run: |
+          Rscript -e 'rmarkdown::render("report.Rmd", output_file = "report.pdf")'
+
+      - name: Check query status
         id: query_check
         run: |
           if [ -f query_status.txt ] && [ "$(cat query_status.txt)" == "SUCCESS" ]; then
@@ -47,21 +53,20 @@ jobs:
             echo "query_status=failed" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
       - name: Deploy PDF
         if: steps.query_check.outputs.query_status == 'success'
         uses: actions/upload-artifact@v3
-        with: 
+        with:
           name: supabase-report-pdf
           path: report.pdf
-          
-      # Github Pagea
-      - name: Deploy to Github Pages
+
+      # Optional: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         if: steps.query_check.outputs.query_status == 'success'
-        uses: peaceirls/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           publish_branch: gh-pages
           keep_files: true
-          
