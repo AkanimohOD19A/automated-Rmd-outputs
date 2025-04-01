@@ -61,7 +61,7 @@ jobs:
           name: supabase-report-pdf
           path: report.pdf
 
-      # Optional: Deploy to GitHub Pages
+      # Optional: GitHub Pages
       - name: Deploy to GitHub Pages
         if: steps.query_check.outputs.query_status == 'success'
         uses: peaceiris/actions-gh-pages@v3
