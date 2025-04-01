@@ -24,6 +24,11 @@ jobs:
         with:
           r-version: '4.4.2'
           
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+        with:
+          pandoc-version: '3.1.11.1'  
+          
       - name: Install dependencies
         run: |
           R -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex"))'
