@@ -36,7 +36,7 @@ jobs:
 
       - name: Render RMarkdown
         run: |
-          Rscript -e 'rmarkdown::render("report.Rmd", output_file = "report.pdf")'
+          Rscript -e 'rmarkdown::render("auto-report.Rmd", output_file = "report.pdf")'
 
       - name: Check query status
         id: query_check
