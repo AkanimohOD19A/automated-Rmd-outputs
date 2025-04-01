@@ -31,7 +31,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          R -e 'install.packages(c("rmarkdown", "DBI", knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex"))'
+          R -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex", "DBI", "RPostgres"))'
           R -e 'tinytex::install_tinytex()'
 
       - name: Check Supabase credentials
