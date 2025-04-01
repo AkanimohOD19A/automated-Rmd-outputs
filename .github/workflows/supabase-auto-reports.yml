@@ -29,9 +29,17 @@ jobs:
         with:
           pandoc-version: '3.1.11.1'  
           
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          R -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex", "DBI", "RPostgres"))'
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+      
+      - name: Install R dependencies
+        run: |
+          R -e 'options(repos = c(CRAN = "https://cloud.r-project.org"))'
+          R -e 'install.packages(c("rmarkdown", "knitr"), dependencies=TRUE)'
+          R -e 'install.packages(c("httr", "jsonlite", "dplyr", "ggplot2", "lubridate"), dependencies=TRUE)'
+          R -e 'install.packages(c("tinytex", "DBI", "RPostgres"), dependencies=TRUE)'
           R -e 'tinytex::install_tinytex()'
 
       - name: Check Supabase credentials
@@ -40,6 +48,12 @@ jobs:
             echo "Supabase credentials are not properly set in GitHub secrets."
             exit 1
           fi
+          
+      - name: Verify R package installation
+        run: |
+          R -e 'installed_packages <- installed.packages()[,"Package"]; cat("Installed packages:", paste(installed_packages, collapse=", "), "\n")'
+          R -e 'if(!"httr" %in% installed.packages()[,"Package"]) { install.packages("httr", dependencies=TRUE); print("Reinstalled httr") }'
+          R -e 'library(httr); print("httr loaded successfully")'
 
       - name: Render RMarkdown
         run : |
