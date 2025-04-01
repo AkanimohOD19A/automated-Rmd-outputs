@@ -23,11 +23,16 @@ jobs:
           
       - name: Install dependencies
         run: |
-          R -e 'install.packages(c("rmarkdown", "knitr", 
-          "httr", "jsonlite", "dplyr", "ggplot2", "lubridate",
-          "tinytex"))'
+          R -e 'install.packages(c("rmarkdown", "knitr", "httr", "jsonlite", "dplyr", "ggplot2", "lubridate", "tinytex"))'
           R -e 'tinytex::install_tinytex()'
-          
+
+      - name: Check Supabase credentials
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "Supabase credentials are not properly set in GitHub secrets."
+            exit 1
+          fi
+
       - name: Render RMarkdown
         run : |
           Rscript -e 'rmarkdown::render("auto-report.Rmd", output_file = "report.pdf")'
