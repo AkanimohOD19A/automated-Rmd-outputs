@@ -1,0 +1,67 @@
+name: Generate and Deploy Supabase Report
+
+on: 
+  schedule:
+    - cron: '0 8 * * 1' # i.e every Monday @ 8AM UTC
+  workflow_dispatch: # Allow manual trigger
+  
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set Up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.4.2'
+          
+      - name: Install dependencies
+        run: |
+          R -e 'install.packages(c('rmarkdown', 'knitr', 
+          'httr', 'jsonlite', 'dplyr', 'ggplot2', 'lubridate',
+          'tinytex'))'
+          R -e 'tinytex::install_tinytex()'
+          
+      - name: Render RMarkdown
+        run : |
+        Rscript -e 'rmarkdown::render("auto-report.Rmd", output_file = "report.pdf")'
+        
+      - name: Check Query Status
+        id: query_check
+        run: |
+          if [ -f query_status.txt ] && [ "$(cat query_status.txt)" == "SUCCESS" ]; then
+            echo "Query executed successfully, proceeding with deployment."
+            echo "query_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "Query failed, aborting deployment."
+            if [ -f error_log.txt ]; then
+              echo "Error details:"
+              cat error_log.txt
+            fi
+            echo "query_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+      - name: Deploy PDF
+        if: steps.query_check.outputs.query_status == 'success'
+        uses: actions/upload-artifact@v3
+        with: 
+          name: supabase-report-pdf
+          path: report.pdf
+          
+      # Github Pagea
+      - name: Deploy to Github Pages
+        if: steps.query_check.outputs.query_status == 'success'
+        uses: peaceirls/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          keep_files: true
+          
